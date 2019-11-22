@@ -4,12 +4,12 @@
   react-rowboat🚣
 </h1>
 
-<p align="center" style="font-size: 1.4rem;">
+<p align="center" style="font-size: 1.6rem;">
   构建原始、简单、可扩展的react slide | carousel组件
 </p>
 
 <p align="center">
-![react-rowboat](https://user-images.githubusercontent.com/18432680/69444463-5cfe3400-0d8b-11ea-991a-579972d95332.gif)
+  <img src="https://user-images.githubusercontent.com/18432680/69444463-5cfe3400-0d8b-11ea-991a-579972d95332.gif" alt="react-rowboat" />
 <p>
 
 ## 使用场景
@@ -20,13 +20,13 @@
 
 react-rowboat使用了[React Render Props](https://github.com/monsterooo/blog/issues/17)模式最大程度的减少API，为您自定义组件提供了最大的灵活性。因为所有的组件内容和样式都是您自己负责渲染。
 
-## Install
+## 安装
 
 ```bash
 npm install --save react-rowboat
 ```
 
-## Usage
+## 使用
 
 建议保持`getContainerProps`和`getWrapperProps`行div所在的层级关系，因为它们有一些基本的样式依赖，除此之外您可以渲染任意的内容。
 
@@ -143,7 +143,7 @@ import RowBoat, { HORIZONTAL, VERTICAL } from "rect-rowboat";
 
 ## Children Function
 
-您可以像下面这样去使用Render Props， 一般情况请使用下面的结构
+您可以像下面这样去使用Render Props， 强烈推荐保持如下的页面结构
 
 ```jsx
 <RowBoat
