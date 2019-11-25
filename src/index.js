@@ -1,6 +1,6 @@
 import React, { cloneElement } from "react";
 import PropTypes from "prop-types";
-import { noop, packRefs, setDirectionStyle } from "./utils";
+import { noop, packRefs, setDirectionStyle, reversalNumber, getStyle, parseMatrix, getStep } from "./utils";
 import { HORIZONTAL, VERTICAL } from "./constants";
 
 class RowBoat extends React.Component {
@@ -13,7 +13,8 @@ class RowBoat extends React.Component {
     speed: PropTypes.number,
     loop: PropTypes.bool,
     autoplay: PropTypes.bool,
-    delay: PropTypes.number
+    delay: PropTypes.number,
+    drag: PropTypes.bool,
   };
   static defaultProps = {
     children: noop,
@@ -31,14 +32,31 @@ class RowBoat extends React.Component {
       containerRect: {
         width: 0,
         height: 0
-      }
+      },
+      wrapperStyle: {}, // 包装元素style
+    };
+    this.mouse = {
+      clientXOrigin: 0,
+      clientYOrigin: 0,
+      diffX: 0, // 拖动后的距离
+      diffY: 0, // 拖动后的距离
+    };
+    this.wrapper = {
+      x: 0,
+      y: 0,
+      'transition-duration': ''
     };
   }
   componentDidMount() {
-    const { autoplay } = this.props;
+    const { autoplay, drag } = this.props;
     this.setRect();
     autoplay && this.setAutoPlay(true);
     window.addEventListener("resize", this._resize);
+    if (drag) {
+      window.addEventListener('mouseup', this._windowMouseUp);
+      this._containerNode.addEventListener('mousedown', this._containerMouseDown);
+      window.addEventListener('mousemove', this._windowMouseMove);
+    }
   }
   componentDidUpdate(prevProps) {
     const { autoplay } = this.props;
@@ -47,6 +65,69 @@ class RowBoat extends React.Component {
         ? this.setAutoPlay(true)
         : this.setAutoPlay(false);
     }
+  }
+  _containerMouseDown = e => {
+    const { wrapperStyle } = this.state;
+    const matrix = parseMatrix(getStyle(this._wrapperNode, 'transform')) || [0,0,0,0,0,0];
+    const [,,,,x, y] = matrix;
+    this.wrapper.x = +x;
+    this.wrapper.y = +y;
+    this.mouseDown = true;
+    this.mouse.clientXOrigin = e.clientX;
+    this.mouse.clientYOrigin = e.clientY;
+
+    this.setState({
+      wrapperStyle: {
+        ...wrapperStyle,
+        transitionDuration: '0ms',
+      }
+    });
+  }
+  _windowMouseMove = e => {
+    if (!this.mouseDown) return;
+    const { direction } = this.props;
+    const { wrapperStyle } = this.state;
+    const { x, y } = this.wrapper;
+    const { clientXOrigin, clientYOrigin } = this.mouse;
+    const { clientX, clientY } = e;
+    const diffX = reversalNumber(clientXOrigin - clientX);
+    const diffY = reversalNumber(clientYOrigin - clientY);
+
+    this.mouse.diffX = diffX;
+    this.mouse.diffY = diffY;
+
+    const translate = direction === HORIZONTAL ? `translate3d(${x + diffX}px, 0px, 0px)` : `translate3d(0px, ${y + diffY}px, 0px)`;
+    this.setState({
+      wrapperStyle: {
+        ...wrapperStyle,
+        transform: translate,
+      }
+    })
+  }
+  _windowMouseUp = e => {
+    if (!this.mouseDown) return;
+    const { direction } = this.props;
+    const { index, wrapperStyle } = this.state;
+    const { diffX, diffY } = this.mouse;
+    const { width, height } = this.state.containerRect;
+    const stepX = getStep(diffX, width);
+    const stepY = getStep(diffY, height);
+    this.mouseDown = false;
+
+    if (!diffX && direction === HORIZONTAL) return;
+    if (!diffY && direction === VERTICAL) return;
+    const step = direction === HORIZONTAL ? stepX : stepY;
+    const diff = direction === HORIZONTAL ? diffX : diffY;
+    this.setState({
+      wrapperStyle: {
+        ...wrapperStyle,
+        transitionDuration: `${this.props.speed}ms`,
+      }
+    }, () => {
+      this.setIndex(diff >= 0 ? index - step : index + step);
+    });
+    this.mouse.diffX = 0;
+    this.mouse.diffY = 0;
   }
   _resize = () => {
     this.setRect();
@@ -110,13 +191,13 @@ class RowBoat extends React.Component {
     };
   };
   // 获取包装元素的属性
-  getWrapperProps = ({ style, ...rest } = {}) => {
-    const { index, containerRect } = this.state;
-    const { speed, direction } = this.props;
-    const setStyle = this.props.setDirectionStyle || setDirectionStyle;
+  getWrapperProps = ({ refKey = "ref", ref, style, ...rest } = {}) => {
+    const { wrapperStyle } = this.state;
+
     return {
+      [refKey]: packRefs(ref, this.getWrapperNode),
       style: {
-        ...setStyle(index, direction, speed, containerRect),
+        ...wrapperStyle,
         display: "flex",
         width: "100%",
         height: "100%",
@@ -138,22 +219,19 @@ class RowBoat extends React.Component {
     };
   };
   setIndex = index => {
-    const { index: currentIndex } = this.state;
-    const { length, loop } = this.props;
-    if ((currentIndex === index || index < 1 || index > length) && !loop)
-      return;
-    if (loop && index > length) {
-      return this.setState({
-        index: 1
-      });
-    }
-    if (loop && index < 1) {
-      return this.setState({
-        index: length
-      });
-    }
+    const { containerRect } = this.state;
+    const { length, loop, speed, direction, drag } = this.props;
+    const setStyle = this.props.setDirectionStyle || setDirectionStyle;
+
+    if (drag && index > length) index = length;
+    if (drag && index < 1) index = 1;
+    if (loop && !drag && index > length) index = 1;
+    if (loop && !drag && index < 1) index = length;
+
+    const wrapperStyle = setStyle(index, direction, speed, containerRect);
     this.setState({
-      index
+      index,
+      wrapperStyle
     });
   };
   render() {

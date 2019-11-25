@@ -1,5 +1,5 @@
 import React from "react";
-import RowBoat from "react-rowboat";
+import RowBoat, { VERTICAL } from "react-rowboat";
 
 import "./index.css";
 
@@ -10,9 +10,10 @@ const items = [
 ];
 function App() {
   return (
-    <div className="App">
-      <div style={{ height: 300 }}>
-        <RowBoat loop length={items.length}>
+    <div className="App" style={{ width: 300, margin: '0 auto' }}>
+      <br /><br />
+      <div style={{ height: 300, border: '1px solid red' }}>
+        <RowBoat loop length={items.length} direction={VERTICAL} >
           {({
             index,
             setIndex,

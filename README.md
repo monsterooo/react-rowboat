@@ -128,6 +128,12 @@ import RowBoat, { HORIZONTAL, VERTICAL } from "rect-rowboat";
 
 `HORIZONTAL`为水平动画模式，`VERTICAL`为垂直动画模式
 
+### drag
+
+> `bool/null` | 默认为`false`
+
+如果给定`drag`参数则可以使用鼠标拖动切换
+
 ### autoplay
 
 > `bool/null` | 默认为`false`
